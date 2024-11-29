@@ -1,43 +1,54 @@
-class UserController {
-    constructor(pool) {
-      this.pool = pool;
-    }
-  
-    async createUser(req, res) {
-      console.log('createUser function called');
-      const { name, email } = req.body;
-      const query = 'INSERT INTO users (name, email) VALUES (@name, @email)';
-      const result = await this.pool.request()
-        .input('name', name)
-        .input('email', email)
-        .query(query);
-      if (result.rowsAffected) {
-        res.json({ message: 'User created successfully' });
-      } else {
-        res.status(500).json({ message: 'Error creating user' });
-      }
-    };
-  
-    async getAllUsers(req, res) {
-      console.log('getAllUsers function called');
-      const query = 'SELECT * FROM users';
-      const result = await this.pool.request().query(query);
-      res.json({ users: result.recordset });
-    }
+import User from '../model/userModel.js';
 
-    async deleteUser(req, res) {
-      console.log('deleteUser function called');
-      const { id } = req.params;
-      const query = 'DELETE FROM users WHERE id = @id';
-      const result = await this.pool.request()
-        .input('id', id)
-        .query(query);
-      if (result.rowsAffected) {
+class UserController {
+async getAllUsers(req, res) {
+  try {
+    const users = await User.find().select('_id name email');
+    res.status(200).json(users);
+  } catch (err) {
+    console.error('Error getting users:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+  async createUser(req, res) {
+    const { name, email } = req.body;
+  
+    try {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(409).json({ error: 'Email already exists' });
+      }
+  
+      const newUser = new User({ name, email });
+      await newUser.save();
+      res.status(201).json({ user: newUser });
+    } catch (err) {
+      console.error('Error creating user:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  async deleteUser(req, res) {
+    const { id } = req.params;
+
+    try {
+      const deletedUser = await User.findByIdAndDelete(id);
+      if (deletedUser) {
         res.json({ message: 'User deleted successfully' });
       } else {
-        res.status(500).json({ message: 'Error deleting user' });
+        res.status(404).json({ message: 'User not found' });
       }
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-  };
-  
-  export default UserController;
+  }
+}
+
+const userController = new UserController();
+
+export default {
+  getAllUsers: userController.getAllUsers,
+  createUser: userController.createUser,
+  deleteUser: userController.deleteUser,
+};

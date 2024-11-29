@@ -1,45 +1,26 @@
 import express, { json } from 'express';
-import mssql from 'mssql';
+import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv'; // Import dotenv
-
-dotenv.config(); // Load environment variables from .env
-
-const ConnectionPool = mssql.ConnectionPool;
+import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes.js';
-import UserController from './controller/userController.js';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3008;
 
-const pool = new ConnectionPool({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,
-  database: process.env.DB_DATABASE,
-  options: {
-    encrypt: true,
-    trustServerCertificate: true
-  }
-});
-
-pool.connect(err => {
-  if (err) {
-    console.error('Error connecting to SQL Server:', err);
-  } else {
-    console.log('Connected to SQL Server');
-  }
-});
-
-const userController = new UserController(pool);
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 app.use(json());
 app.use(cors({
   origin: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow only these methods
-  allowedHeaders: ['Content-Type', 'Authorization'] // Allow only these headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use('/api', userRoutes(userController));
+
+app.use('/api', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('Welcome to the user API!');

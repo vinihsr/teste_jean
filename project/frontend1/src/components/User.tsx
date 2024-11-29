@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import './User.css'; // Importando o arquivo CSS
+import { v4 as uuidv4 } from 'uuid';
+import './User.css';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
 
 const Users = () => {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchUsers = async () => {
@@ -16,15 +23,19 @@ const Users = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setUsers(data.users || []);
+      setUsers(data);
     } catch (error) {
-      setError(error.message);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const postUser = async (event) => {
+  const postUser = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     try {
@@ -47,24 +58,32 @@ const Users = () => {
       setName('');
       setEmail('');
     } catch (error) {
-      setError(error.message);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteUser = async (id) => {
+  const deleteUser = async (_id: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3008/api/user/${id}`, {
+      const response = await fetch(`http://localhost:3008/api/user/${_id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== id));
+      setUsers((prevUsers) => prevUsers.filter((user) => user._id !== _id));
     } catch (error) {
-      setError(error.message);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -113,18 +132,18 @@ const Users = () => {
       {loading && <p>Loading...</p>}
       {!loading && users.length === 0 && <p>No users found.</p>}
       <ul className="list">
-        {users.map((user) => (
-          <li key={user.id} className="list-item">
-            {user.name} ({user.email})
-            <button
-              className="delete-button"
-              onClick={() => deleteUser(user.id)}
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+  {users.map((user) => (
+    <li key={user._id || uuidv4()} className="list-item">
+      {user.name} ({user.email})
+<button
+  className="delete-button"
+  onClick={() => deleteUser(user._id)}
+>
+  Delete
+</button>
+    </li>
+  ))}
+</ul>
     </div>
   );
 };

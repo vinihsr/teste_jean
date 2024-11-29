@@ -1,24 +1,12 @@
 import express from 'express';
+import UserController from '../controller/userController.js';
 
-const userRoutes = (userController) => {
-  const router = express.Router();
+const router = express.Router();
 
-  router.get('/user', async (req, res) => {
-    console.log('Received request to /user');
-    await userController.getAllUsers(req, res);
-  });
+router.get('/user', UserController.getAllUsers);
 
-  router.post('/user', async (req, res) => {
-    console.log('Received request to /user');
-    await userController.createUser(req, res);
-  });
+router.post('/user', UserController.createUser);
 
-  router.delete('/user/:id', async (req, res) => {
-    console.log('Received request to /user/:id');
-    await userController.deleteUser(req, res);
-  });
-  
-  return router;
-};
+router.delete('/user/:id', UserController.deleteUser);
 
-export default userRoutes;
+export default router;
