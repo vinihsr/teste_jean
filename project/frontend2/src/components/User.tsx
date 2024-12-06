@@ -18,7 +18,7 @@ const Users = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3008/api/user');
+      const response = await fetch('http://35.168.197.167:3008/api/user');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -39,7 +39,7 @@ const Users = () => {
     event.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3008/api/user', {
+      const response = await fetch('http://35.168.197.167:3008/api/user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ const Users = () => {
   const deleteUser = async (_id: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3008/api/user/${_id}`, {
+      const response = await fetch(`http://35.168.197.167:3008/api/user${_id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
