@@ -1,14 +1,9 @@
 # Criação de Infraestrutura de Rede
 
-  ### Topologia da Rede
-
-  
-
 
   ### Pré-requisitos
-* Três instâncias EC2 onde o frontend está hospedado.
-* Uma instância EC2 para o Load Balancer.
-* Uma instância EC2 para o Proxy Reverso e VPN.
+* Duas instâncias EC2 onde o frontend está hospedado.
+* Uma instância EC2 para o Proxy Reverso, Load Balancer e VPN.
 * Uma instância EC2 para o Backend e Banco de Dados.
 
 
@@ -16,7 +11,7 @@
 
 ## Configuração do Load Balancer
 1. **Instalação do NGINX**
-    * Acesse a máquina 4 (Load Balancer).
+    * Acesse a máquina Load Balancer.
     * Execute o comando:
       
      <br>
@@ -49,7 +44,6 @@
      upstream servidores{
         server # IP da máquina 1
         server # IP da máquina 2
-        server # IP da máquina 3
      }
      
      server {
@@ -108,8 +102,8 @@
   
  ## Configuração do Proxy Reverso
  1. **Instalação do NGINX**
-    * Acesse a máquina 5 (Proxy Reverso).
-    * Execute o comando:
+    
+    * Na mesma máquina execute o comando:
       
      <br>
 
@@ -121,7 +115,7 @@
       ```
    
 
-2. **Configuração do NGINX como Proxy Reverso**
+3. **Configuração do NGINX como Proxy Reverso**
     * Criando um novo arquivo de configuração:
 
      <br>
@@ -142,7 +136,7 @@
        listen 80;
 
        location / {
-         proxy_pass http://<endereco-IP-da-maquina-4>;
+         proxy_pass http://<endereco-IP-da-maquina-do-Load-balancer>;
          proxy_set_header Host $host;
          proxy_set_header X-Real-IP $remote_addr;
          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -163,17 +157,7 @@
      
      ```
 
- 3. **Remoção da Configuração Padrão**
-    * Remova o link para a configuração padrão:
 
-     <br>
-
-     ```
-
-     sudo rm /etc/nginx/sites-enabled/default
-
-     ```
-     
  4. **Teste e Reinicie o NGINX**
     * Teste a configuração:
 
@@ -199,7 +183,7 @@
   
 ## Configuração da VPN
 1. **Instalação do OpenVPN no servidor**
-   * Acesse a máquina 5 (Proxy Reverso).
+   * Acesse a máquina do Proxy Reverso.
    * Faça o download do script de instalação:
 
    <br>
@@ -301,7 +285,7 @@
 
 ## Configuração do Banco de Dados
 1. **Instalação do Docker e Docker Compose**
-    * Acesse a máquina 6 (Banco de Dados).
+    * Acesse a máquina do Banco de Dados.
     * Execute o comando:
 
     <br>
@@ -320,50 +304,48 @@
 
     ```
 
-    sudo nano /projeto-redes/backend/docker-compose.yml
+    sudo nano teste_jean/project/backend/docker-compose.yml
     
     ```
 
-    * Adicione a seguinte configuração para preparar o banco de dados PostgreSQL:
+    * Adicione a seguinte configuração para preparar o banco de dados MongoDB:
 
     <br>
 
-    ```
+ ```
 
-    version: "3.8"
-    services:
-      db:
-        image: postgres:latest
-        container_name: postgres_container
-        environment:
-          POSTGRES_USER: USER_NAME
-          POSTGRES_PASSWORD: USER_PASSWORD
-          POSTGRES_DB: DB_NAME
-        ports:
-          - "5432:5432"
-        volumes:
-          - db_data:/var/lib/postgresql/data
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: dockerfile.node
+    ports:
+      - "3008:3008" # Expõe o backend na porta 3008 da máquina
+    depends_on:
+      - mongo
+    environment:
+      MONGO_URI: mongodb://mongo:27018/mydb
+  mongo:
+    image: mongo:6
+    ports:
+      - "27018:27017" # Expõe o MongoDB para conexão interna e externa
     volumes:
-      db_data:
+      - mongo_data:/data/db
 
-    ```
+volumes:
+  mongo_data:
+    driver: local
+
+ ```
 
 3. **Rodar o Projeto**
-    * O backend utiliza o módulo ``child-process`` para  executar comandos externos, como o ``docker-compose up``, que permite subir os containers. 
     * Executar o backend:
-
-    <br>
-
-    ```
-
-    npm start
-
-    ```
     
     * Ordem de inicialização:
-      1. Docker Compose é iniciado: o comando ``docker-compose up -d`` inicializa o container PostgreSQL.
+      1. Docker Compose é iniciado: o comando ``docker-compose up -d`` inicializa o container MongoDB.
       2. O Sequelize sincroniza com o banco de dados no container.
-      3. O servidor Express é iniciado na porta 3000.
+      3. O servidor Express é iniciado na porta 3008.
 
 
 4. **Acessar Banco de Dados diretamente pelo container**
@@ -383,16 +365,7 @@
 
     ```
 
-    docker exec -it postgres_container psql -U USER_NAME -d DB_NAME
+     docker exec -it backend_mongo_1 bash
 
     ```
 
-    * Para visualizar os usuários cadastrados, execute dentro do shell do PostgreSQL:
-
-    <br>
-
-    ```
-
-    SELECT * FROM "Users";
-
-    ```
